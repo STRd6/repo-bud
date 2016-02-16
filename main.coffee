@@ -5,8 +5,12 @@ p = new Promise (resolve, reject) ->
 
 gh = Github(p)
 
+log = console.log.bind console
+
 setTimeout ->
-  gh.api('user').then console.log.bind console
+  gh.api('orgs/distri/repos').then log
+  .then ->
+    log gh.lastRequest().getResponseHeader("Link")
 , 100
 
 # We want to get all the repos in distri, STRd6
