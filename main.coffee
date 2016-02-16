@@ -10,7 +10,9 @@ log = console.log.bind console
 setTimeout ->
   gh.api('orgs/distri/repos').then log
   .then ->
-    log gh.lastRequest().getResponseHeader("Link")
+    log gh.lastRequest().getResponseHeader("Link").split(',').map (link) ->
+      link.split(';').map (s) ->
+        s.trim()
 , 100
 
 # We want to get all the repos in distri, STRd6
