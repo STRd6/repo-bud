@@ -1,2 +1,2 @@
 dependencies:
-  github: "distri/github:master"
+  github: "distri/github:v0.5.1-pre.0"
