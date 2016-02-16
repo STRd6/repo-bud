@@ -174,7 +174,7 @@
     },
     "main.coffee": {
       "path": "main.coffee",
-      "content": "Github = require 'github'\n\np = new Promise (resolve, reject) ->\n  resolve(localStorage.authToken)\n\ngh = Github(p)\n\nlog = console.log.bind console\n\nsetTimeout ->\n  gh.api('orgs/distri/repos').then log\n  .then ->\n    log gh.lastRequest().getResponseHeader(\"Link\")\n, 100\n\n# We want to get all the repos in distri, STRd6\n# for each repo we want to look at the gh-pages branch\n# for each .json.js file in the gh-pages branch we want to write a corresponding\n# .json file\n",
+      "content": "Github = require 'github'\n\np = new Promise (resolve, reject) ->\n  resolve(localStorage.authToken)\n\ngh = Github(p)\n\nlog = console.log.bind console\n\nsetTimeout ->\n  gh.api('orgs/distri/repos').then log\n  .then ->\n    log gh.lastRequest().getResponseHeader(\"Link\").split(',').map (link) ->\n      link.split(';').map (s) ->\n        s.trim()\n, 100\n\n# We want to get all the repos in distri, STRd6\n# for each repo we want to look at the gh-pages branch\n# for each .json.js file in the gh-pages branch we want to write a corresponding\n# .json file\n",
       "mode": "100644",
       "type": "blob"
     },
@@ -188,7 +188,7 @@
   "distribution": {
     "main": {
       "path": "main",
-      "content": "(function() {\n  var Github, gh, log, p;\n\n  Github = require('github');\n\n  p = new Promise(function(resolve, reject) {\n    return resolve(localStorage.authToken);\n  });\n\n  gh = Github(p);\n\n  log = console.log.bind(console);\n\n  setTimeout(function() {\n    return gh.api('orgs/distri/repos').then(log).then(function() {\n      return log(gh.lastRequest().getResponseHeader(\"Link\"));\n    });\n  }, 100);\n\n}).call(this);\n",
+      "content": "(function() {\n  var Github, gh, log, p;\n\n  Github = require('github');\n\n  p = new Promise(function(resolve, reject) {\n    return resolve(localStorage.authToken);\n  });\n\n  gh = Github(p);\n\n  log = console.log.bind(console);\n\n  setTimeout(function() {\n    return gh.api('orgs/distri/repos').then(log).then(function() {\n      return log(gh.lastRequest().getResponseHeader(\"Link\").split(',').map(function(link) {\n        return link.split(';').map(function(s) {\n          return s.trim();\n        });\n      }));\n    });\n  }, 100);\n\n}).call(this);\n",
       "type": "blob"
     },
     "pixie": {
