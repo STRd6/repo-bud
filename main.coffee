@@ -16,7 +16,7 @@ log = (value) ->
 doItLive = false
 
 setTimeout ->
-  gh.api('orgs/distri/repos')
+  gh.api('users/STRd6/repos')
   .then (data) ->
     convertResultPage(data)
   .catch (e) ->
@@ -66,15 +66,22 @@ convertRepo = (repo, uri) ->
     files.map convertFile
   .then (files) ->
     if doItLive
-      repo.commitTree
-        baseTree: true
-        branch: "gh-pages"
-        message: "Converting .json.js to .json"
-        tree: files
+      if files.length > 0
+        repo.commitTree
+          baseTree: true
+          branch: "gh-pages"
+          message: "Converting .json.js to .json"
+          tree: files
     else
       console.log "Dry run #{uri}"
   .then ->
     log "converted #{uri}"
+  .catch (e) ->
+    if e.status is 404
+      log "Skipped:", uri
+    else
+      console.error e
+      throw e
 
 convertFile = (file) ->
   path: file.path.replace /\.js$/, ""
