@@ -7,33 +7,108 @@ p = new Promise (resolve, reject) ->
 
 gh = Github(p)
 
+Repository = gh.Repository
+
 log = (value) ->
   console.log value
   return value
 
+doItLive = false
+
 setTimeout ->
-  gh.api('orgs/distri/repos').then log
+  gh.api('orgs/distri/repos')
   .then (data) ->
-    data.forEach (datum, i) ->
-      template = URITemplates(datum.contents_url)
-      uri = template.fill(path: "") + "?ref=gh-pages"
-      console.log uri
+    convertResultPage(data)
+  .catch (e) ->
+    console.error e
 
-      if i is 1
-        gh.api(uri).then log
-        .then (files) ->
-          log( 
-            files.filter (file) ->
-              file.type is "file" and file.path.match /\.json\.js$/
-            .map (file) ->
-              # TODO: Read the file, convert path to .json, write json data to gh-pages branch
-              file.path
-          )
-
-    log gh.lastRequest().getResponseHeader("Link").split(',').map (link) ->
-      link.split(';').map (s) ->
-        s.trim()
 , 100
+
+getNextLink = () ->
+  gh.lastRequest().getResponseHeader("Link").split(',').map (link) ->
+    link.split(';').map (s) ->
+      s.trim()
+  .filter (link) ->
+    link[1] is 'rel="next"'
+  .map (link) ->
+    str = link[0]
+    str.substring 1, str.length - 1
+
+convertResultPage = (data) ->
+  nextLink = getNextLink()[0]
+
+  sequentially data, (datum) ->
+    template = URITemplates(datum.contents_url)
+    uri = template.fill(path: "") + "?ref=gh-pages"
+
+    repo = Repository(datum)
+
+    convertRepo(repo, uri)
+  .then ->
+    if nextLink
+      console.log nextLink
+
+      gh.api(nextLink)
+      .then convertResultPage
+    else
+      console.log 'DONE!'
+
+convertRepo = (repo, uri) ->
+  gh.api(uri)
+  .then (files) ->
+    Promise.all(
+      files.filter (file) ->
+        file.type is "file" and file.path.match /\.json\.js$/
+      .map (file) ->
+        gh.api(file.url)
+    )
+  .then (files) ->
+    files.map convertFile
+  .then (files) ->
+    if doItLive
+      repo.commitTree
+        baseTree: true
+        branch: "gh-pages"
+        message: "Converting .json.js to .json"
+        tree: files
+    else
+      console.log "Dry run #{uri}"
+  .then ->
+    log "converted #{uri}"
+
+convertFile = (file) ->
+  path: file.path.replace /\.js$/, ""
+  mode: "100644"
+  type: "blob"
+  content: extractJSON(atob(file.content))
+
+extractJSON = (content) ->
+  start = content.indexOf('{')
+  end = content.length - 2
+
+  jsonData = content.substring start, end
+
+  JSON.parse jsonData
+
+  jsonData + "\n"
+
+sequentially = (array, fn) ->
+  new Promise (resolve, reject) ->
+    index = 0
+    results = []
+
+    step = ->
+      if index < array.length
+        p = fn(array[index], index)
+        index += 1
+
+        results.push p
+
+        p.then step
+      else
+        resolve(results)
+
+    step()
 
 # We want to get all the repos in distri, STRd6
 # for each repo we want to look at the gh-pages branch
