@@ -1,3 +1,5 @@
+Base64 = require "base64"
+
 URITemplates = require "./uri-templates"
 
 Github = require 'github'
@@ -16,9 +18,12 @@ log = (value) ->
 doItLive = false
 
 setTimeout ->
-  gh.api('users/STRd6/repos')
+  gh.api('repos/distri/packager')
   .then (data) ->
-    convertResultPage(data)
+    repo = Repository(data)
+    url = URITemplates(repo.contents_url()).fill(path: "") + "?ref=gh-pages"
+    console.log url
+    convertRepo(repo, url)
   .catch (e) ->
     console.error e
 
@@ -87,7 +92,7 @@ convertFile = (file) ->
   path: file.path.replace /\.js$/, ""
   mode: "100644"
   type: "blob"
-  content: extractJSON(atob(file.content))
+  content: extractJSON(Base64.decode(file.content))
 
 extractJSON = (content) ->
   start = content.indexOf('{')
